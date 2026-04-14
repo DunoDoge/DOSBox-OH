@@ -1,26 +1,44 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import testNapi from 'libentry.so';
-
-const DOMAIN = 0x0000;
 
 @Entry
 @Component
 struct Index {
-  @State message: string = 'Hello World';
+  private xcomponentController: XComponentController = new XComponentController();
 
   build() {
-    Row() {
-      Column() {
-        Text(this.message)
-          .fontSize($r('app.float.page_text_font_size'))
-          .fontWeight(FontWeight.Bold)
-          .onClick(() => {
-            this.message = 'Welcome';
-            hilog.info(DOMAIN, 'testTag', 'Test NAPI 2 + 3 = %{public}d', testNapi.add(2, 3));
-          })
-      }
-      .width('100%')
+    Stack() {
+      XComponent({
+        id: 'dosboxXComponent',
+        type: XComponentType.SURFACE,
+        libraryname: 'entry',
+        controller: this.xcomponentController
+      })
+        .width('100%')
+        .height('100%')
+        .onLoad((context?: object) => {
+          // Get surface ID from XComponentController and create NativeWindow in C++
+          let surfaceId: string = this.xcomponentController.getXComponentSurfaceId();
+          testNapi.setSurfaceId(surfaceId);
+
+          // Register XComponent callbacks for touch events etc.
+          if (context) {
+            testNapi.registerCallback(context);
+          }
+
+          testNapi.startEmulator();
+        })
+        .onDestroy(() => {
+          testNapi.stopEmulator();
+        })
     }
+    .width('100%')
     .height('100%')
+    .onKeyEvent((event: KeyEvent) => {
+      if (event) {
+        let scancode = event.keyCode;
+        let down = event.type === KeyType.Down ? 1 : 0;
+        testNapi.sendKeyEvent(scancode, down);
+      }
+    })
   }
 }

@@ -1,0 +1,3 @@
+D:/hmos_projects/OHDosBox/entry/build_cmake_arm64/CMakeFiles/entry.dir
+D:/hmos_projects/OHDosBox/entry/build_cmake_arm64/CMakeFiles/edit_cache.dir
+D:/hmos_projects/OHDosBox/entry/build_cmake_arm64/CMakeFiles/rebuild_cache.dir

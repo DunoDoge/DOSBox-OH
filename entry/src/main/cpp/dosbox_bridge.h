@@ -1,0 +1,47 @@
+#ifndef DOSBOX_BRIDGE_H
+#define DOSBOX_BRIDGE_H
+
+#include <ace/xcomponent/native_interface_xcomponent.h>
+#include <native_window/external_window.h>
+#include <napi/native_api.h>
+#include <pthread.h>
+#include <atomic>
+#include <mutex>
+#include <queue>
+#include <cstdint>
+
+class DosBoxBridge {
+public:
+    static DosBoxBridge &Instance();
+
+    void SetNativeWindow(OHNativeWindow *window);
+    OHNativeWindow *GetNativeWindow() const { return nativeWindow_; }
+
+    void SetEnv(napi_env env) { env_ = env; }
+
+    bool StartEmulator();
+    void StopEmulator();
+    bool IsRunning() const { return running_.load(); }
+
+    void PushKeyEvent(int scancode, int keycode, bool down);
+    void PushQuitEvent();
+
+    void RenderFrame(const uint8_t *pixels, int width, int height, int pitch);
+
+private:
+    DosBoxBridge() = default;
+    ~DosBoxBridge() = default;
+    DosBoxBridge(const DosBoxBridge &) = delete;
+    DosBoxBridge &operator=(const DosBoxBridge &) = delete;
+
+    static void *EmulatorThreadEntry(void *arg);
+    void EmulatorLoop();
+
+    OHNativeWindow *nativeWindow_ = nullptr;
+    napi_env env_ = nullptr;
+    pthread_t emulatorThread_;
+    std::atomic<bool> running_{false};
+    std::atomic<bool> nativeWindowReady_{false};
+};
+
+#endif

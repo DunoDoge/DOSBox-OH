@@ -1,0 +1,58 @@
+#ifndef DOSBOX_DOSBOX_CONFIG_H
+#define DOSBOX_DOSBOX_CONFIG_H
+
+#define DOSBOX_VERSION "0.83.0-ohos"
+#define BUILD_GIT_HASH "ohos"
+
+#define LINUX 1
+
+#define C_TARGET_CPU_ARM 1
+#define C_TARGET_CPU_X86 0
+#define C_UNALIGNED_MEMORY 0
+#define C_PER_PAGE_W_OR_X 1
+#define C_DYNAMIC_X86 0
+#define C_DYNREC 0
+#define C_FPU_X86 0
+#define C_CORE_INLINE 1
+
+#define C_OPENGL 0
+#define C_DEBUGGER 0
+#define C_HEAVY_DEBUGGER 0
+#define C_MT32EMU 0
+#define C_MANYMOUSE 0
+#define SUPPORT_XINPUT2 0
+#define C_COREAUDIO 0
+#define C_COREMIDI 0
+#define C_COREFOUNDATION 0
+#define C_CORESERVICES 0
+#define C_ALSA 0
+#define C_SYSTEM_ZLIB_NG 0
+
+#define HAVE_CLOCK_GETTIME 1
+#define HAVE_MPROTECT 1
+#define HAVE_MMAP 1
+#define HAVE_STRNLEN 1
+#define HAVE_STRUCT_DIRENT_D_TYPE 1
+#define HAVE_LIBGEN_H 1
+#define HAVE_NETINET_IN_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_SYS_SOCKET_H 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_BUILTIN_AVAILABLE 0
+#define HAVE_BUILTIN_CLEAR_CACHE 1
+#define HAVE_MAP_JIT 0
+#define HAVE_PTHREAD_WRITE_PROTECT_NP 0
+#define HAVE_SYS_ICACHE_INVALIDATE 0
+#define HAVE_PTHREAD_SETNAME_NP 1
+#define HAVE_SETPRIORITY 0
+#define HAVE_FD_ZERO 1
+#define HAVE_SYS_XATTR_H 0
+
+#define CUSTOM_DATADIR "/data"
+
+#define C_IPX 0
+#define C_SPEEXDSP 0
+#define C_FLUIDSYNTH 0
+
+#endif
