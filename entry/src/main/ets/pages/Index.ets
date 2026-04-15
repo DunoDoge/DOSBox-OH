@@ -1,4 +1,5 @@
 import testNapi from 'libentry.so';
+import EntryAbility from '../entryability/EntryAbility';
 
 @Entry
 @Component
@@ -15,7 +16,7 @@ struct Index {
       })
         .width('100%')
         .height('100%')
-        .onLoad((context?: object) => {
+        .onLoad(async (context?: object) => {
           // Get surface ID from XComponentController and create NativeWindow in C++
           let surfaceId: string = this.xcomponentController.getXComponentSurfaceId();
           testNapi.setSurfaceId(surfaceId);
@@ -24,6 +25,10 @@ struct Index {
           if (context) {
             testNapi.registerCallback(context);
           }
+
+          // Wait for shared folder path to be resolved (permission request may be async)
+          let sharedPath: string = await EntryAbility.pathReady;
+          testNapi.setSharedFolderPath(sharedPath);
 
           testNapi.startEmulator();
         })

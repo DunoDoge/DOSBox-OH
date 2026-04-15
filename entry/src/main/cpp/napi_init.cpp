@@ -168,6 +168,28 @@ static napi_value SetSurfaceId(napi_env env, napi_callback_info info)
     return nullptr;
 }
 
+static napi_value SetSharedFolderPath(napi_env env, napi_callback_info info)
+{
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    // Get string path from ETS
+    size_t strSize = 0;
+    napi_get_value_string_utf8(env, args[0], nullptr, 0, &strSize);
+
+    std::string path;
+    if (strSize > 0) {
+        path.resize(strSize);
+        napi_get_value_string_utf8(env, args[0], &path[0], strSize + 1, &strSize);
+    }
+
+    OH_LOG_INFO(LOG_APP, "SetSharedFolderPath: path='%{public}s'", path.c_str());
+    DosBoxBridge::Instance().SetSharedFolderPath(path);
+
+    return nullptr;
+}
+
 static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
 {
     OH_LOG_INFO(LOG_APP, "XComponent OnSurfaceCreated");
@@ -281,6 +303,7 @@ static napi_value Init(napi_env env, napi_value exports)
             {"sendKeyEvent", nullptr, SendKeyEvent, nullptr, nullptr, nullptr, napi_default, nullptr},
             {"registerCallback", nullptr, RegisterCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
             {"setSurfaceId", nullptr, SetSurfaceId, nullptr, nullptr, nullptr, napi_default, nullptr},
+            {"setSharedFolderPath", nullptr, SetSharedFolderPath, nullptr, nullptr, nullptr, napi_default, nullptr},
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
         DosBoxBridge::Instance().SetEnv(env);

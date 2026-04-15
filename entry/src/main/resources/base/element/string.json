@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "DOSBox-OH"
+    },
+    {
+      "name": "download_permission_reason",
+      "value": "用于访问共享文件夹，以便DOSBox模拟器读取和存储DOS程序文件"
     }
   ]
 }

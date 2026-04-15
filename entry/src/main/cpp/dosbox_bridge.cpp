@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <sys/mman.h>
+#include <sys/stat.h>
 
 #undef LOG_DOMAIN
 #undef LOG_TAG
@@ -66,10 +67,41 @@ void DosBoxBridge::EmulatorLoop()
 {
     OH_LOG_INFO(LOG_APP, "DosBox main loop starting...");
 
+    // Build command line arguments
+    // Use -c "MOUNT D <path>" to pass MOUNT command directly to DOSBox.
+    // The -c flag is processed by DOSBox's AUTOEXEC mechanism and is not
+    // affected by -noprimaryconf, making it more reliable than config file injection.
+    std::string mountCmd;
+    char *argv[5] = {nullptr};
+    int argc = 0;
+
     char arg0[] = "dosbox";
     char arg1[] = "-noprimaryconf";
-    char *argv[] = {arg0, arg1, nullptr};
-    int argc = 2;
+    argv[argc++] = arg0;
+    argv[argc++] = arg1;
+
+    if (!sharedFolderPath_.empty()) {
+        // Validate the shared folder path is accessible from C++ layer
+        struct stat st;
+        if (stat(sharedFolderPath_.c_str(), &st) == 0 && S_ISDIR(st.st_mode)) {
+            mountCmd = "MOUNT D " + std::string("\"") + sharedFolderPath_ + std::string("\"");
+            OH_LOG_INFO(LOG_APP, "Mounting shared folder: '%{public}s'", mountCmd.c_str());
+            static char argC1[] = "-c";
+            argv[argc++] = argC1;
+            argv[argc++] = const_cast<char *>(mountCmd.c_str());
+        } else {
+            OH_LOG_WARN(LOG_APP, "Shared folder path not accessible, skipping mount: '%{public}s'",
+                        sharedFolderPath_.c_str());
+        }
+    } else {
+        OH_LOG_INFO(LOG_APP, "No shared folder path set, skipping mount");
+    }
+
+    // Log the full command line for debugging
+    OH_LOG_INFO(LOG_APP, "DOSBox args: argc=%{public}d", argc);
+    for (int i = 0; i < argc; i++) {
+        OH_LOG_INFO(LOG_APP, "  argv[%{public}d] = '%{public}s'", i, argv[i] ? argv[i] : "(null)");
+    }
 
     int ret = dosbox_main(argc, argv);
 
@@ -85,6 +117,12 @@ void DosBoxBridge::PushKeyEvent(int scancode, int keycode, bool down)
 void DosBoxBridge::PushQuitEvent()
 {
     OHOS_PushSDLQuitEvent();
+}
+
+void DosBoxBridge::SetSharedFolderPath(const std::string &path)
+{
+    sharedFolderPath_ = path;
+    OH_LOG_INFO(LOG_APP, "SetSharedFolderPath: '%{public}s'", path.c_str());
 }
 
 // Scale and center the source frame into the destination buffer.

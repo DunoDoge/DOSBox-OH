@@ -9,6 +9,7 @@
 #include <mutex>
 #include <queue>
 #include <cstdint>
+#include <string>
 
 class DosBoxBridge {
 public:
@@ -32,6 +33,9 @@ public:
     int GetScreenWidth() const { return screenWidth_; }
     int GetScreenHeight() const { return screenHeight_; }
 
+    void SetSharedFolderPath(const std::string &path);
+    std::string GetSharedFolderPath() const { return sharedFolderPath_; }
+
 private:
     DosBoxBridge() = default;
     ~DosBoxBridge() = default;
@@ -48,6 +52,7 @@ private:
     std::atomic<bool> nativeWindowReady_{false};
     int screenWidth_ = 0;
     int screenHeight_ = 0;
+    std::string sharedFolderPath_;
 };
 
 #endif
