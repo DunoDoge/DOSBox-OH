@@ -151,6 +151,20 @@ static napi_value SetSurfaceId(napi_env env, napi_callback_info info)
     OH_LOG_INFO(LOG_APP, "SetSurfaceId: NativeWindow created at %{public}p", nativeWindow);
     DosBoxBridge::Instance().SetNativeWindow(nativeWindow);
 
+    // Get actual Surface size from the first buffer
+    OHNativeWindowBuffer *buffer = nullptr;
+    int fenceFd = -1;
+    int32_t bufRet = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &buffer, &fenceFd);
+    if (bufRet == 0 && buffer) {
+        BufferHandle *bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
+        if (bufferHandle) {
+            OH_LOG_INFO(LOG_APP, "SetSurfaceId: Surface size=%{public}dx%{public}d stride=%{public}d",
+                       bufferHandle->width, bufferHandle->height, bufferHandle->stride);
+            DosBoxBridge::Instance().SetScreenSize(bufferHandle->width, bufferHandle->height);
+        }
+        OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow, buffer, fenceFd, {});
+    }
+
     return nullptr;
 }
 

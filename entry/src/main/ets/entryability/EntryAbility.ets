@@ -29,6 +29,23 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
     });
+
+    // Set status bar and navigation bar to black with immersive mode
+    let windowClass: window.Window | null = null;
+    windowStage.getMainWindow((err, data) => {
+      if (err.code) {
+        hilog.error(DOMAIN, 'testTag', 'Failed to get main window. Cause: %{public}s', JSON.stringify(err));
+        return;
+      }
+      windowClass = data;
+      // Set immersive mode for full screen
+      windowClass.setWindowLayoutFullScreen(true);
+      // Set status bar and navigation bar background to black
+      windowClass.setWindowSystemBarProperties({
+        statusBarColor: '#000000',
+        navigationBarColor: '#000000'
+      });
+    });
   }
 
   onWindowStageDestroy(): void {

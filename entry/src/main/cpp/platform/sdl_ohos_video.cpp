@@ -429,13 +429,19 @@ int SDL_GetNumVideoDisplays()
 
 int SDL_GetDisplayBounds(int displayIndex, SDL_Rect *rect)
 {
-    if (rect) { rect->x = 0; rect->y = 0; rect->w = 1080; rect->h = 1920; }
+    int w = DosBoxBridge::Instance().GetScreenWidth();
+    int h = DosBoxBridge::Instance().GetScreenHeight();
+    if (w <= 0 || h <= 0) { w = 1080; h = 1920; } // fallback
+    if (rect) { rect->x = 0; rect->y = 0; rect->w = w; rect->h = h; }
     return 0;
 }
 
 int SDL_GetCurrentDisplayMode(int displayIndex, SDL_DisplayMode *mode)
 {
-    if (mode) { mode->w = 1080; mode->h = 1920; mode->refresh_rate = 60; mode->format = SDL_PIXELFORMAT_ARGB8888; }
+    int w = DosBoxBridge::Instance().GetScreenWidth();
+    int h = DosBoxBridge::Instance().GetScreenHeight();
+    if (w <= 0 || h <= 0) { w = 1080; h = 1920; } // fallback
+    if (mode) { mode->w = w; mode->h = h; mode->refresh_rate = 60; mode->format = SDL_PIXELFORMAT_ARGB8888; }
     return 0;
 }
 

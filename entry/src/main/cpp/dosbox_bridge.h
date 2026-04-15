@@ -28,6 +28,10 @@ public:
 
     void RenderFrame(const uint8_t *pixels, int width, int height, int pitch);
 
+    void SetScreenSize(int w, int h) { screenWidth_ = w; screenHeight_ = h; }
+    int GetScreenWidth() const { return screenWidth_; }
+    int GetScreenHeight() const { return screenHeight_; }
+
 private:
     DosBoxBridge() = default;
     ~DosBoxBridge() = default;
@@ -42,6 +46,8 @@ private:
     pthread_t emulatorThread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> nativeWindowReady_{false};
+    int screenWidth_ = 0;
+    int screenHeight_ = 0;
 };
 
 #endif

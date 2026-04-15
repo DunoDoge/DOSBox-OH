@@ -87,6 +87,51 @@ void DosBoxBridge::PushQuitEvent()
     OHOS_PushSDLQuitEvent();
 }
 
+// Scale and center the source frame into the destination buffer.
+// src: source pixels (ARGB8888, width*height, srcPitch stride)
+// dst: destination buffer (dstWidth*dstHeight, dstStride stride)
+// The source is scaled to fit the destination while maintaining aspect ratio,
+// then centered with black letterboxing/pillarboxing.
+static void ScaleAndCenterFrame(const uint8_t *src, int srcW, int srcH, int srcPitch,
+                                uint8_t *dst, int dstW, int dstH, int dstStride)
+{
+    if (srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0) return;
+
+    // Calculate scaled size maintaining aspect ratio
+    float scaleX = static_cast<float>(dstW) / srcW;
+    float scaleY = static_cast<float>(dstH) / srcH;
+    float scale = (scaleX < scaleY) ? scaleX : scaleY;
+
+    int outW = static_cast<int>(srcW * scale);
+    int outH = static_cast<int>(srcH * scale);
+    if (outW <= 0) outW = 1;
+    if (outH <= 0) outH = 1;
+
+    // Center offset
+    int offX = (dstW - outW) / 2;
+    int offY = (dstH - outH) / 2;
+
+    // Clear entire destination to black
+    for (int y = 0; y < dstH; y++) {
+        memset(dst + y * dstStride, 0, dstW * 4);
+    }
+
+    // Nearest-neighbor scaling with centering
+    for (int dy = 0; dy < outH; dy++) {
+        int sy = dy * srcH / outH;
+        if (sy >= srcH) sy = srcH - 1;
+
+        const uint32_t *srcRow = reinterpret_cast<const uint32_t *>(src + sy * srcPitch);
+        uint32_t *dstRow = reinterpret_cast<uint32_t *>(dst + (offY + dy) * dstStride);
+
+        for (int dx = 0; dx < outW; dx++) {
+            int sx = dx * srcW / outW;
+            if (sx >= srcW) sx = srcW - 1;
+            dstRow[offX + dx] = srcRow[sx];
+        }
+    }
+}
+
 void DosBoxBridge::RenderFrame(const uint8_t *pixels, int width, int height, int pitch)
 {
     if (!nativeWindowReady_.load() || !nativeWindow_ || !pixels) return;
@@ -99,32 +144,43 @@ void DosBoxBridge::RenderFrame(const uint8_t *pixels, int width, int height, int
     BufferHandle *bufferHandle = OH_NativeWindow_GetBufferHandleFromNative(buffer);
     if (!bufferHandle) return;
 
+    int dstW = bufferHandle->width;
+    int dstH = bufferHandle->height;
+    int dstStride = bufferHandle->stride;
+
+    // If source matches destination exactly, skip scaling for performance
+    bool needsScaling = (width != dstW || height != dstH);
+
     if (bufferHandle->virAddr != nullptr) {
         uint8_t *dst = static_cast<uint8_t *>(bufferHandle->virAddr);
-        int dstStride = bufferHandle->stride;
-        int copyWidth = width * 4;
-        if (copyWidth > dstStride) copyWidth = dstStride;
-
-        for (int y = 0; y < height && y < bufferHandle->height; y++) {
-            memcpy(dst + y * dstStride, pixels + y * pitch, copyWidth);
+        if (needsScaling) {
+            ScaleAndCenterFrame(pixels, width, height, pitch, dst, dstW, dstH, dstStride);
+        } else {
+            int copyWidth = width * 4;
+            if (copyWidth > dstStride) copyWidth = dstStride;
+            for (int y = 0; y < height; y++) {
+                memcpy(dst + y * dstStride, pixels + y * pitch, copyWidth);
+            }
         }
     } else if (bufferHandle->fd >= 0) {
         void *mapped = mmap(nullptr, bufferHandle->size, PROT_READ | PROT_WRITE, MAP_SHARED, bufferHandle->fd, 0);
         if (mapped != MAP_FAILED) {
             uint8_t *dst = static_cast<uint8_t *>(mapped);
-            int dstStride = bufferHandle->stride;
-            int copyWidth = width * 4;
-            if (copyWidth > dstStride) copyWidth = dstStride;
-
-            for (int y = 0; y < height && y < bufferHandle->height; y++) {
-                memcpy(dst + y * dstStride, pixels + y * pitch, copyWidth);
+            if (needsScaling) {
+                ScaleAndCenterFrame(pixels, width, height, pitch, dst, dstW, dstH, dstStride);
+            } else {
+                int copyWidth = width * 4;
+                if (copyWidth > dstStride) copyWidth = dstStride;
+                for (int y = 0; y < height; y++) {
+                    memcpy(dst + y * dstStride, pixels + y * pitch, copyWidth);
+                }
             }
             munmap(mapped, bufferHandle->size);
         }
     }
 
     Region region;
-    Region::Rect rect = {0, 0, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+    Region::Rect rect = {0, 0, static_cast<uint32_t>(dstW), static_cast<uint32_t>(dstH)};
     region.rects = &rect;
     region.rectNumber = 1;
     OH_NativeWindow_NativeWindowFlushBuffer(nativeWindow_, buffer, fenceFd, region);
