@@ -1,10 +1,12 @@
 import testNapi from 'libentry.so';
 import EntryAbility from '../entryability/EntryAbility';
+import { common } from '@kit.AbilityKit';
 
 @Entry
 @Component
 struct Index {
   private xcomponentController: XComponentController = new XComponentController();
+  private context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
 
   build() {
     Stack() {
@@ -29,6 +31,11 @@ struct Index {
           // Wait for shared folder path to be resolved (permission request may be async)
           let sharedPath: string = await EntryAbility.pathReady;
           testNapi.setSharedFolderPath(sharedPath);
+
+          // Register exit callback: when DOSBox exits naturally, terminate the app
+          testNapi.registerExitCallback(() => {
+            this.context.terminateSelf();
+          });
 
           testNapi.startEmulator();
         })

@@ -107,6 +107,7 @@ void DosBoxBridge::EmulatorLoop()
 
     running_.store(false);
     OH_LOG_INFO(LOG_APP, "DosBox main loop exited with code %{public}d", ret);
+    NotifyExit();
 }
 
 void DosBoxBridge::PushKeyEvent(int scancode, int keycode, bool down)
@@ -123,6 +124,41 @@ void DosBoxBridge::SetSharedFolderPath(const std::string &path)
 {
     sharedFolderPath_ = path;
     OH_LOG_INFO(LOG_APP, "SetSharedFolderPath: '%{public}s'", path.c_str());
+}
+
+void DosBoxBridge::RegisterExitCallback(napi_env env, napi_value callback)
+{
+    if (exitTsfn_) {
+        napi_release_threadsafe_function(exitTsfn_, napi_tsfn_abort);
+        exitTsfn_ = nullptr;
+    }
+
+    napi_value workName = nullptr;
+    napi_create_string_utf8(env, "ExitCallback", NAPI_AUTO_LENGTH, &workName);
+
+    napi_status status = napi_create_threadsafe_function(
+        env, callback, nullptr, workName, 0, 1, nullptr, nullptr, nullptr, nullptr, &exitTsfn_);
+    if (status != napi_ok) {
+        OH_LOG_ERROR(LOG_APP, "RegisterExitCallback: napi_create_threadsafe_function failed (%{public}d)", status);
+        exitTsfn_ = nullptr;
+        return;
+    }
+    OH_LOG_INFO(LOG_APP, "RegisterExitCallback: registered");
+}
+
+void DosBoxBridge::NotifyExit()
+{
+    if (!exitTsfn_) {
+        OH_LOG_WARN(LOG_APP, "NotifyExit: no exit callback registered");
+        return;
+    }
+
+    napi_status status = napi_call_threadsafe_function(exitTsfn_, nullptr, napi_tsfn_nonblocking);
+    if (status != napi_ok) {
+        OH_LOG_ERROR(LOG_APP, "NotifyExit: napi_call_threadsafe_function failed (%{public}d)", status);
+        return;
+    }
+    OH_LOG_INFO(LOG_APP, "NotifyExit: exit callback scheduled");
 }
 
 // Scale and center the source frame into the destination buffer.

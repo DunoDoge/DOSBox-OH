@@ -100,6 +100,8 @@ static napi_value SendKeyEvent(napi_env env, napi_callback_info info)
     napi_get_value_int32(env, args[0], &keyCode);
     napi_get_value_int32(env, args[1], &down);
 
+    if (!DosBoxBridge::Instance().IsRunning()) return nullptr;
+
     SDL_Scancode scancode = OHOSKeyCodeToSDLScancode(keyCode);
     if (scancode == SDL_SCANCODE_UNKNOWN) {
         return nullptr;
@@ -190,6 +192,25 @@ static napi_value SetSharedFolderPath(napi_env env, napi_callback_info info)
     return nullptr;
 }
 
+static napi_value RegisterExitCallbackNapi(napi_env env, napi_callback_info info)
+{
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    OH_LOG_INFO(LOG_APP, "RegisterExitCallbackNapi called");
+
+    napi_valuetype valuetype = napi_undefined;
+    napi_typeof(env, args[0], &valuetype);
+    if (valuetype != napi_function) {
+        OH_LOG_ERROR(LOG_APP, "RegisterExitCallbackNapi: argument is not a function");
+        return nullptr;
+    }
+
+    DosBoxBridge::Instance().RegisterExitCallback(env, args[0]);
+    return nullptr;
+}
+
 static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
 {
     OH_LOG_INFO(LOG_APP, "XComponent OnSurfaceCreated");
@@ -217,6 +238,8 @@ static void OnSurfaceDestroyedCB(OH_NativeXComponent *component, void *window)
 
 static void DispatchTouchEventCB(OH_NativeXComponent *component, void *window)
 {
+    if (!DosBoxBridge::Instance().IsRunning()) return;
+
     OH_NativeXComponent_TouchEvent touchEvent;
     OH_NativeXComponent_GetTouchEvent(component, window, &touchEvent);
 
@@ -304,6 +327,7 @@ static napi_value Init(napi_env env, napi_value exports)
             {"registerCallback", nullptr, RegisterCallback, nullptr, nullptr, nullptr, napi_default, nullptr},
             {"setSurfaceId", nullptr, SetSurfaceId, nullptr, nullptr, nullptr, napi_default, nullptr},
             {"setSharedFolderPath", nullptr, SetSharedFolderPath, nullptr, nullptr, nullptr, napi_default, nullptr},
+            {"registerExitCallback", nullptr, RegisterExitCallbackNapi, nullptr, nullptr, nullptr, napi_default, nullptr},
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
         DosBoxBridge::Instance().SetEnv(env);

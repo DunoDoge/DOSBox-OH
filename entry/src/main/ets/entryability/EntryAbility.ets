@@ -2,6 +2,7 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want, abilityAccessC
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 import { fileIo, Environment } from '@kit.CoreFileKit';
+import testNapi from 'libentry.so';
 
 const DOMAIN = 0xFF00;
 const DOWNLOAD_PERMISSION: Permissions = 'ohos.permission.READ_WRITE_DOWNLOAD_DIRECTORY';
@@ -21,6 +22,7 @@ export default class EntryAbility extends UIAbility {
 
   onDestroy(): void {
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
+    testNapi.stopEmulator();
   }
 
   // Request Download directory permission and resolve shared folder path

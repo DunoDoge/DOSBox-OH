@@ -36,6 +36,9 @@ public:
     void SetSharedFolderPath(const std::string &path);
     std::string GetSharedFolderPath() const { return sharedFolderPath_; }
 
+    void RegisterExitCallback(napi_env env, napi_value callback);
+    void NotifyExit();
+
 private:
     DosBoxBridge() = default;
     ~DosBoxBridge() = default;
@@ -53,6 +56,7 @@ private:
     int screenWidth_ = 0;
     int screenHeight_ = 0;
     std::string sharedFolderPath_;
+    napi_threadsafe_function exitTsfn_ = nullptr;
 };
 
 #endif
