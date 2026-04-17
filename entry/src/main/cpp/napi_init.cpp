@@ -264,8 +264,6 @@ static void DispatchTouchEventCB(OH_NativeXComponent *component, void *window)
 
     if (touchEvent.type == OH_NATIVEXCOMPONENT_DOWN) {
         OHOS_PushSDLMouseEvent(static_cast<int>(touchEvent.x), static_cast<int>(touchEvent.y), SDL_BUTTON_LEFT, 1);
-        // Show system keyboard on touch down
-        DosBoxBridge::Instance().NotifyShowKeyboard();
     } else if (touchEvent.type == OH_NATIVEXCOMPONENT_UP) {
         OHOS_PushSDLMouseEvent(static_cast<int>(touchEvent.x), static_cast<int>(touchEvent.y), SDL_BUTTON_LEFT, 0);
     } else if (touchEvent.type == OH_NATIVEXCOMPONENT_MOVE) {
