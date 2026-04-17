@@ -1,3 +1,4 @@
 [submodule "entry/src/main/cpp/dosbox-src"]
 	path = entry/src/main/cpp/dosbox-src
 	url = https://github.com/DunoDoge/dosbox-staging.git
+	branch = ohos-port
