@@ -895,6 +895,7 @@ SDL_Window *SDL_CreateWindow(const char *title, int x, int y, int w, int h, uint
 void SDL_DestroyWindow(SDL_Window *window);
 uint32_t SDL_GetWindowID(SDL_Window *window);
 SDL_Window *SDL_GetWindowFromID(uint32_t id);
+SDL_Window* SDL_OHOS_GetWindow(void);
 void SDL_GetWindowSize(SDL_Window *window, int *w, int *h);
 void SDL_GetWindowSizeInPixels(SDL_Window *window, int *w, int *h);
 void SDL_SetWindowSize(SDL_Window *window, int w, int h);

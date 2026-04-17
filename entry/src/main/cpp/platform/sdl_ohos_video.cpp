@@ -2,6 +2,7 @@
 #include "dosbox_bridge.h"
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
 #include <hilog/log.h>
 
 #undef LOG_DOMAIN
@@ -13,6 +14,7 @@ static SDL_Window *g_window = nullptr;
 static SDL_Renderer *g_renderer = nullptr;
 static SDL_Surface *g_screen_surface = nullptr;
 static char g_error_msg[256] = {0};
+static std::mutex g_window_mutex;
 
 struct SDL_Window {
     int x, y, w, h;
@@ -81,7 +83,7 @@ void SDL_Quit()
 
 SDL_Window *SDL_CreateWindow(const char *title, int x, int y, int w, int h, uint32_t flags)
 {
-    OH_LOG_INFO(LOG_APP, "SDL_CreateWindow title=%{public}s size=%{public}dx%{public}d", title, w, h);
+    OH_LOG_INFO(LOG_APP, "SDL_CreateWindow title=%{public}s size=%{public}dx%{public}d flags=0x%{public}x", title, w, h, flags);
     SDL_Window *win = new SDL_Window();
     win->x = x;
     win->y = y;
@@ -93,13 +95,21 @@ SDL_Window *SDL_CreateWindow(const char *title, int x, int y, int w, int h, uint
     }
     win->id = g_next_window_id++;
     win->opacity = 1.0f;
-    g_window = win;
+    
+    {
+        std::lock_guard<std::mutex> lock(g_window_mutex);
+        g_window = win;
+    }
+    
+    OH_LOG_INFO(LOG_APP, "SDL_CreateWindow: window created successfully, id=%{public}d", win->id);
     return win;
 }
 
 void SDL_DestroyWindow(SDL_Window *window)
 {
+    OH_LOG_INFO(LOG_APP, "SDL_DestroyWindow: destroying window id=%{public}d", window ? window->id : 0);
     if (window == g_window) {
+        std::lock_guard<std::mutex> lock(g_window_mutex);
         g_window = nullptr;
     }
     delete window;
@@ -112,8 +122,15 @@ uint32_t SDL_GetWindowID(SDL_Window *window)
 
 SDL_Window *SDL_GetWindowFromID(uint32_t id)
 {
+    std::lock_guard<std::mutex> lock(g_window_mutex);
     if (g_window && g_window->id == id) return g_window;
     return nullptr;
+}
+
+SDL_Window* SDL_OHOS_GetWindow(void)
+{
+    std::lock_guard<std::mutex> lock(g_window_mutex);
+    return g_window;
 }
 
 void SDL_GetWindowSize(SDL_Window *window, int *w, int *h)

@@ -1,6 +1,7 @@
 import testNapi from 'libentry.so';
 import EntryAbility from '../entryability/EntryAbility';
 import { common } from '@kit.AbilityKit';
+import { deviceInfo } from '@kit.BasicServicesKit';
 import { inputMethod } from '@kit.IMEKit';
 import { window } from '@kit.ArkUI';
 
@@ -10,9 +11,21 @@ struct Index {
   private xcomponentController: XComponentController = new XComponentController();
   private context: common.UIAbilityContext = this.getUIContext().getHostContext() as common.UIAbilityContext;
   @State private keyboardVisible: boolean = false;
+  @State private showKeyboardButton: boolean = true;
   private keyboardAttached: boolean = false;
   private inputMethodController: inputMethod.InputMethodController | null = null;
   private mainWindow: window.Window | null = null;
+
+  aboutToAppear() {
+    try {
+      const dt: string = deviceInfo.deviceType;
+      if (dt === '2in1') {
+        this.showKeyboardButton = false;
+      }
+    } catch (e) {
+      console.error('Failed to get device type');
+    }
+  }
 
   build() {
     Stack({ alignContent: Alignment.TopEnd }) {
@@ -53,26 +66,28 @@ struct Index {
           this.removeKeyboardListener();
         })
 
-      Button() {
-        Row() {
-          Text('⌨')
-            .fontSize(24)
-            .fontColor(Color.White)
-          Text(this.keyboardVisible ? 'ON' : 'OFF')
-            .fontSize(12)
-            .fontColor(this.keyboardVisible ? '#4CAF50' : '#FF5252')
-            .margin({ left: 4 })
+      if (this.showKeyboardButton) {
+        Button() {
+          Row() {
+            Text('⌨')
+              .fontSize(24)
+              .fontColor(Color.White)
+            Text(this.keyboardVisible ? 'ON' : 'OFF')
+              .fontSize(12)
+              .fontColor(this.keyboardVisible ? '#4CAF50' : '#FF5252')
+              .margin({ left: 4 })
+          }
         }
+        .width(80)
+        .height(48)
+        .backgroundColor(this.keyboardVisible ? '#E6333333' : '#CC333333')
+        .borderRadius(8)
+        .shadow({ radius: 6, color: '#80000000', offsetX: 2, offsetY: 2 })
+        .margin({ top: 48, right: 16 })
+        .onClick(() => {
+          this.toggleKeyboard();
+        })
       }
-      .width(80)
-      .height(48)
-      .backgroundColor(this.keyboardVisible ? '#E6333333' : '#CC333333')
-      .borderRadius(8)
-      .shadow({ radius: 6, color: '#80000000', offsetX: 2, offsetY: 2 })
-      .margin({ top: 48, right: 16 })
-      .onClick(() => {
-        this.toggleKeyboard();
-      })
     }
     .width('100%')
     .height('100%')
