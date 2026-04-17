@@ -1,6 +1,7 @@
 import testNapi from 'libentry.so';
 import EntryAbility from '../entryability/EntryAbility';
 import { common } from '@kit.AbilityKit';
+import { inputMethod } from '@kit.IMEKit';
 
 @Entry
 @Component
@@ -35,6 +36,16 @@ struct Index {
           // Register exit callback: when DOSBox exits naturally, terminate the app
           testNapi.registerExitCallback(() => {
             this.context.terminateSelf();
+          });
+
+          // Register show keyboard callback: touch event triggers system keyboard
+          testNapi.registerShowKeyboardCallback(() => {
+            try {
+              let inputMethodController = inputMethod.getController();
+              inputMethodController.showSoftKeyboard();
+            } catch (e) {
+              // Ignore errors if keyboard cannot be shown
+            }
           });
 
           testNapi.startEmulator();

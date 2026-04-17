@@ -161,6 +161,36 @@ void DosBoxBridge::NotifyExit()
     OH_LOG_INFO(LOG_APP, "NotifyExit: exit callback scheduled");
 }
 
+void DosBoxBridge::RegisterShowKeyboardCallback(napi_env env, napi_value callback)
+{
+    if (showKeyboardTsfn_) {
+        napi_release_threadsafe_function(showKeyboardTsfn_, napi_tsfn_abort);
+        showKeyboardTsfn_ = nullptr;
+    }
+
+    napi_value workName = nullptr;
+    napi_create_string_utf8(env, "ShowKeyboardCallback", NAPI_AUTO_LENGTH, &workName);
+
+    napi_status status = napi_create_threadsafe_function(
+        env, callback, nullptr, workName, 0, 1, nullptr, nullptr, nullptr, nullptr, &showKeyboardTsfn_);
+    if (status != napi_ok) {
+        OH_LOG_ERROR(LOG_APP, "RegisterShowKeyboardCallback: napi_create_threadsafe_function failed (%{public}d)", status);
+        showKeyboardTsfn_ = nullptr;
+        return;
+    }
+    OH_LOG_INFO(LOG_APP, "RegisterShowKeyboardCallback: registered");
+}
+
+void DosBoxBridge::NotifyShowKeyboard()
+{
+    if (!showKeyboardTsfn_) return;
+
+    napi_status status = napi_call_threadsafe_function(showKeyboardTsfn_, nullptr, napi_tsfn_nonblocking);
+    if (status != napi_ok) {
+        OH_LOG_ERROR(LOG_APP, "NotifyShowKeyboard: napi_call_threadsafe_function failed (%{public}d)", status);
+    }
+}
+
 // Scale and center the source frame into the destination buffer.
 // src: source pixels (ARGB8888, width*height, srcPitch stride)
 // dst: destination buffer (dstWidth*dstHeight, dstStride stride)

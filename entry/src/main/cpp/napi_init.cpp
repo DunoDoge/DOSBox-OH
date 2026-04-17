@@ -211,6 +211,25 @@ static napi_value RegisterExitCallbackNapi(napi_env env, napi_callback_info info
     return nullptr;
 }
 
+static napi_value RegisterShowKeyboardCallbackNapi(napi_env env, napi_callback_info info)
+{
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+    OH_LOG_INFO(LOG_APP, "RegisterShowKeyboardCallbackNapi called");
+
+    napi_valuetype valuetype = napi_undefined;
+    napi_typeof(env, args[0], &valuetype);
+    if (valuetype != napi_function) {
+        OH_LOG_ERROR(LOG_APP, "RegisterShowKeyboardCallbackNapi: argument is not a function");
+        return nullptr;
+    }
+
+    DosBoxBridge::Instance().RegisterShowKeyboardCallback(env, args[0]);
+    return nullptr;
+}
+
 static void OnSurfaceCreatedCB(OH_NativeXComponent *component, void *window)
 {
     OH_LOG_INFO(LOG_APP, "XComponent OnSurfaceCreated");
@@ -245,6 +264,8 @@ static void DispatchTouchEventCB(OH_NativeXComponent *component, void *window)
 
     if (touchEvent.type == OH_NATIVEXCOMPONENT_DOWN) {
         OHOS_PushSDLMouseEvent(static_cast<int>(touchEvent.x), static_cast<int>(touchEvent.y), SDL_BUTTON_LEFT, 1);
+        // Show system keyboard on touch down
+        DosBoxBridge::Instance().NotifyShowKeyboard();
     } else if (touchEvent.type == OH_NATIVEXCOMPONENT_UP) {
         OHOS_PushSDLMouseEvent(static_cast<int>(touchEvent.x), static_cast<int>(touchEvent.y), SDL_BUTTON_LEFT, 0);
     } else if (touchEvent.type == OH_NATIVEXCOMPONENT_MOVE) {
@@ -261,7 +282,10 @@ static void DoRegisterXComponentCallback(OH_NativeXComponent *nativeXComponent)
 
     OH_LOG_INFO(LOG_APP, "Registering XComponent callbacks...");
 
-    OH_NativeXComponent_Callback callback = {
+    // Must be static: OH_NativeXComponent_RegisterCallback stores the pointer,
+    // and a stack-local variable would be destroyed when the function returns,
+    // leaving dangling function pointers that cause SIGSEGV on touch events.
+    static OH_NativeXComponent_Callback callback = {
         .OnSurfaceCreated = OnSurfaceCreatedCB,
         .OnSurfaceChanged = OnSurfaceChangedCB,
         .OnSurfaceDestroyed = OnSurfaceDestroyedCB,
@@ -328,6 +352,7 @@ static napi_value Init(napi_env env, napi_value exports)
             {"setSurfaceId", nullptr, SetSurfaceId, nullptr, nullptr, nullptr, napi_default, nullptr},
             {"setSharedFolderPath", nullptr, SetSharedFolderPath, nullptr, nullptr, nullptr, napi_default, nullptr},
             {"registerExitCallback", nullptr, RegisterExitCallbackNapi, nullptr, nullptr, nullptr, napi_default, nullptr},
+            {"registerShowKeyboardCallback", nullptr, RegisterShowKeyboardCallbackNapi, nullptr, nullptr, nullptr, napi_default, nullptr},
         };
         napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
         DosBoxBridge::Instance().SetEnv(env);

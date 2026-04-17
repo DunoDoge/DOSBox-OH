@@ -39,6 +39,9 @@ public:
     void RegisterExitCallback(napi_env env, napi_value callback);
     void NotifyExit();
 
+    void RegisterShowKeyboardCallback(napi_env env, napi_value callback);
+    void NotifyShowKeyboard();
+
 private:
     DosBoxBridge() = default;
     ~DosBoxBridge() = default;
@@ -57,6 +60,7 @@ private:
     int screenHeight_ = 0;
     std::string sharedFolderPath_;
     napi_threadsafe_function exitTsfn_ = nullptr;
+    napi_threadsafe_function showKeyboardTsfn_ = nullptr;
 };
 
 #endif

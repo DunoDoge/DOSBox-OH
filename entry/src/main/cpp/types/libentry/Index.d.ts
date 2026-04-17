@@ -5,3 +5,4 @@ export const registerCallback: (context: object) => boolean;
 export const setSurfaceId: (surfaceId: string) => void;
 export const setSharedFolderPath: (path: string) => void;
 export const registerExitCallback: (callback: () => void) => void;
+export const registerShowKeyboardCallback: (callback: () => void) => void;
