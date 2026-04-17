@@ -2,6 +2,7 @@ import testNapi from 'libentry.so';
 import EntryAbility from '../entryability/EntryAbility';
 import { common } from '@kit.AbilityKit';
 import { inputMethod } from '@kit.IMEKit';
+import { window } from '@kit.ArkUI';
 
 @Entry
 @Component
@@ -11,6 +12,7 @@ struct Index {
   @State private keyboardVisible: boolean = false;
   private keyboardAttached: boolean = false;
   private inputMethodController: inputMethod.InputMethodController | null = null;
+  private mainWindow: window.Window | null = null;
 
   build() {
     Stack({ alignContent: Alignment.TopEnd }) {
@@ -42,10 +44,13 @@ struct Index {
           });
 
           testNapi.startEmulator();
+          
+          this.setupKeyboardListener();
         })
         .onDestroy(() => {
           testNapi.stopEmulator();
           this.cleanupInputMethod();
+          this.removeKeyboardListener();
         })
 
       Button() {
@@ -80,6 +85,31 @@ struct Index {
         testNapi.sendKeyEvent(scancode, down);
       }
     })
+  }
+
+  private setupKeyboardListener() {
+    window.getLastWindow(this.context).then((currentWindow) => {
+      this.mainWindow = currentWindow;
+      this.mainWindow.on('keyboardHeightChange', (height: number) => {
+        console.info('keyboardHeightChange: height=' + height);
+        if (height > 0) {
+          this.keyboardVisible = true;
+          console.info('键盘已弹出 (ON)');
+        } else {
+          this.keyboardVisible = false;
+          console.info('键盘已收起 (OFF)');
+        }
+      });
+    }).catch((err: Error) => {
+      console.error('setupKeyboardListener error: ' + JSON.stringify(err));
+    });
+  }
+
+  private removeKeyboardListener() {
+    if (this.mainWindow) {
+      this.mainWindow.off('keyboardHeightChange');
+      this.mainWindow = null;
+    }
   }
 
   private toggleKeyboard() {
@@ -258,10 +288,15 @@ struct Index {
   }
 
   private handleKeyboardStatus(status: inputMethod.KeyboardStatus) {
+    console.info('handleKeyboardStatus: status=' + status);
     if (status === inputMethod.KeyboardStatus.SHOW) {
       this.keyboardVisible = true;
+      console.info('Keyboard is now visible (ON)');
     } else if (status === inputMethod.KeyboardStatus.HIDE) {
       this.keyboardVisible = false;
+      console.info('Keyboard is now hidden (OFF)');
+    } else {
+      console.warn('Unknown keyboard status: ' + status);
     }
   }
 
